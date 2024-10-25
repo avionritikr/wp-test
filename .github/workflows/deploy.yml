@@ -17,8 +17,8 @@ jobs:
         run: |
           echo ${{ secrets.EC2_KEY_BASE64 }} | base64 --decode > cicd-key.pem
           chmod 600 cicd-key.pem
-          ls -la cicd-key.pem  
-          cat cicd-key.pem     
+          ls -la cicd-key.pem  # Check if the key file was created
+          cat cicd-key.pem     # View the key contents (for debugging only; remove in production)
 
       - name: SSH and run deployment commands on the EC2 instance
         run: |
