@@ -3,34 +3,49 @@ name: CI/CD Pipeline for WordPress
 on:
   push:
     branches:
-      - main
+      - main  # Trigger on pushes to the 'main' branch
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Check out the code
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set up PEM key
+      # Step 2: Set up PHP and other dependencies
+      - name: Set up PHP
+        run: |
+          sudo apt update
+          sudo apt install -y apache2 php libapache2-mod-php php-mysql mysql-server
+
+      # Step 3: Set up MySQL database for testing
+      - name: Setup MySQL for Testing
+        run: |
+          sudo service mysql start
+          sudo mysql -e "CREATE DATABASE IF NOT EXISTS wordpress;"
+          sudo mysql -e "CREATE USER IF NOT EXISTS 'wpuser'@'localhost' IDENTIFIED BY 'password';"
+          sudo mysql -e "GRANT ALL PRIVILEGES ON wordpress.* TO 'wpuser'@'localhost';"
+          sudo mysql -e "FLUSH PRIVILEGES;"
+
+      # Step 4: Run Tests (add your testing commands here)
+      - name: Run Tests
+        run: |
+          # Example: Run PHPUnit tests
+          # You should have PHPUnit installed and configured for your WordPress setup
+          # ./vendor/bin/phpunit
+
+      # Step 5: Deploy to Live Server if tests pass
+      - name: Deploy to Live Server
         env:
+          EC2_PUBLIC_IP: 34.204.74.69  # Replace with your EC2 instance's public IP
           EC2_KEY_BASE64: ${{ secrets.EC2_KEY_BASE64 }}
         run: |
           # Decode the base64-encoded private key and save it as ec2_key.pem
           echo "$EC2_KEY_BASE64" | base64 --decode > ec2_key.pem
-          # Set appropriate permissions for the key file
-          chmod 600 ec2_key.pem
-
-      - name: Debug Key  # This step is for debugging; remove or comment it out once confirmed
-        run: |
-          ls -la ec2_key.pem  # Verify that the key exists with correct permissions
-          cat ec2_key.pem     # Display the key (remove this line in production)
-
-      - name: SSH into EC2 and Deploy
-        env:
-          EC2_PUBLIC_IP: "34.204.74.69"
-        run: |
+          chmod 600 ec2_key.pem  # Set appropriate permissions for the key file
+          
           # SSH and run deployment commands on the EC2 instance
           ssh -o StrictHostKeyChecking=no -i ec2_key.pem ubuntu@$EC2_PUBLIC_IP \
-          "cd /var/www/html && git pull origin main && sudo systemctl restart apache2"
+            "cd /var/www/html && git pull origin main && sudo systemctl restart apache2"
