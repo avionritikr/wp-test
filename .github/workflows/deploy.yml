@@ -1,37 +1,30 @@
-name: CI/CD Pipeline for WordPress
+name: Deploy to EC2
 
 on:
   push:
     branches:
-      - main  # Trigger on pushes to the 'main' branch
+      - main
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
-
     steps:
-    # Step 1: Check out the code
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    # Step 2: Set up PHP and other dependencies
-    - name: Set up PHP
-      run: |
-        sudo apt update
-        sudo apt install -y apache2 php libapache2-mod-php php-mysql mysql-server
+      - name: Set up PEM key
+        env:
+          EC2_KEY_BASE64: ${{ secrets.EC2_KEY_BASE64 }}
+        run: |
+          # Decode the base64-encoded private key and save it as ec2_key.pem
+          echo "$EC2_KEY_BASE64" | base64 --decode > ec2_key.pem
+          # Set appropriate permissions for the key file
+          chmod 600 ec2_key.pem
 
-    # Step 3: Run Tests (you can add your testing commands here)
-    - name: Run Tests
-      run: |
-        # Example: Run PHPUnit tests
-        # Ensure PHPUnit is installed and configured for your WordPress setup
-        # ./vendor/bin/phpunit
-
-    # Step 4: Deploy to Live Server if tests pass
-    - name: Deploy to Live Server
-      if: github.ref == 'refs/heads/main'  # Only deploy on the main branch
-      run: |
-        echo "${{ secrets.EC2_KEY }}" > ec2_key.pem  # Store the private key
-        chmod 600 ec2_key.pem  # Set permissions for the private key
-        ssh -o StrictHostKeyChecking=no -i ec2_key.pem ubuntu@34.204.74.69 \
-        "cd /var/www/html && git pull origin main && sudo systemctl restart apache2"
+      - name: SSH into EC2 and Deploy
+        env:
+          EC2_PUBLIC_IP: "34.204.74.69"  # Replace with your EC2 instance's public IP
+        run: |
+          # SSH and run deployment commands on the EC2 instance
+          ssh -o StrictHostKeyChecking=no -i ec2_key.pem ubuntu@$EC2_PUBLIC_IP \
+            "cd /var/www/html && git pull origin main && sudo systemctl restart apache2"
