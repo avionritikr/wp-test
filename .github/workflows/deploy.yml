@@ -1,4 +1,4 @@
-name: Deploy to EC2
+name: CI/CD Pipeline
 
 on:
   push:
@@ -13,21 +13,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Decode EC2 Key
-        env:
-          EC2_KEY: ${{ secrets.EC2_KEY_BASE64 }}
+      - name: Setup SSH Key
         run: |
-          echo "$EC2_KEY" | base64 --decode > ec2_key.pem
-          chmod 600 ec2_key.pem
+          echo ${{ secrets.EC2_KEY_BASE64 }} | base64 --decode > cicd-key.pem
+          chmod 600 cicd-key.pem
 
-      - name: Debug Key
+      - name: SSH and run deployment commands on the EC2 instance
         run: |
-          ls -la ec2_key.pem
-          cat ec2_key.pem
-
-      - name: SSH and deploy
+          ssh -o StrictHostKeyChecking=no -i cicd-key.pem ubuntu@${{ secrets.EC2_PUBLIC_IP }} \
+            "cd /var/www/html && git pull origin main && sudo systemctl restart apache2"
         env:
           EC2_PUBLIC_IP: 34.204.74.69
-        run: |
-          ssh -o StrictHostKeyChecking=no -i ec2_key.pem ubuntu@$EC2_PUBLIC_IP \
-            "cd /var/www/html && git pull origin main && sudo systemctl restart apache2"
