@@ -1,0 +1,35 @@
+name: CI/CD Pipeline for WordPress
+
+on:
+  push:
+    branches:
+      - main  # Trigger on pushes to the 'main' branch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: Check out the code
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    # Step 2: Set up PHP and other dependencies
+    - name: Set up PHP
+      run: |
+        sudo apt update
+        sudo apt install -y apache2 php libapache2-mod-php php-mysql mysql-server
+
+    # Step 3: Run Tests (add your testing commands here)
+    - name: Run Tests
+      run: |
+        # Example: Run PHPUnit tests
+        # You should have PHPUnit installed and configured for your WordPress setup
+        # ./vendor/bin/phpunit
+
+    # Step 4: Deploy to Live Server if tests pass
+    - name: Deploy to Live Server
+      if: github.ref == 'refs/heads/main'  # Only deploy on main branch
+      run: |
+        ssh -o StrictHostKeyChecking=no -i ${{ secrets.EC2_KEY }} ubuntu@34.204.74.69 \
+        "cd /var/www/html && git pull origin main && sudo systemctl restart apache2"
