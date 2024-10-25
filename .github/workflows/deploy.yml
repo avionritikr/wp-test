@@ -20,16 +20,18 @@ jobs:
         sudo apt update
         sudo apt install -y apache2 php libapache2-mod-php php-mysql mysql-server
 
-    # Step 3: Run Tests (add your testing commands here)
+    # Step 3: Run Tests (you can add your testing commands here)
     - name: Run Tests
       run: |
         # Example: Run PHPUnit tests
-        # You should have PHPUnit installed and configured for your WordPress setup
+        # Ensure PHPUnit is installed and configured for your WordPress setup
         # ./vendor/bin/phpunit
 
     # Step 4: Deploy to Live Server if tests pass
     - name: Deploy to Live Server
-      if: github.ref == 'refs/heads/main'  # Only deploy on main branch
+      if: github.ref == 'refs/heads/main'  # Only deploy on the main branch
       run: |
-        ssh -o StrictHostKeyChecking=no -i ${{ secrets.EC2_KEY }} ubuntu@34.204.74.69 \
+        echo "${{ secrets.EC2_KEY }}" > ec2_key.pem
+        chmod 600 ec2_key.pem
+        ssh -o StrictHostKeyChecking=no -i ec2_key.pem ubuntu@34.204.74.69 \
         "cd /var/www/html && git pull origin main && sudo systemctl restart apache2"
