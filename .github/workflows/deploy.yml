@@ -20,7 +20,7 @@ jobs:
         sudo apt update
         sudo apt install -y apache2 php libapache2-mod-php php-mysql mysql-server
 
-    # Step 3: Run Tests (you can add your testing commands here)
+    # Step 3: Run Tests (add your testing commands here)
     - name: Run Tests
       run: |
         # Example: Run PHPUnit tests
@@ -29,7 +29,7 @@ jobs:
 
     # Step 4: Deploy to Live Server if tests pass
     - name: Deploy to Live Server
-      if: github.ref == 'refs/heads/main'  # Only deploy on the main branch
+      if: github.ref == 'refs/heads/main'  # Only deploy on main branch
       run: |
         echo "${{ secrets.EC2_KEY }}" > ec2_key.pem
         chmod 600 ec2_key.pem
